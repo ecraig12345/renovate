@@ -162,7 +162,7 @@ export abstract class AbstractGithubDatasourceCache<
    */
   abstract coerceFetched(fetchedItem: FetchedItem): StoredItem | null;
 
-  private async query(
+  protected async query(
     baseUrl: string,
     variables: GithubQueryParams
   ): Promise<QueryResponse<FetchedItem> | Error> {
@@ -175,6 +175,15 @@ export abstract class AbstractGithubDatasourceCache<
       });
       const { body } = graphqlRes;
       const { data, errors } = body;
+      if (errors?.length) {
+        logger.debug(
+          `error requesting ${this.graphqlQuery}: ${JSON.stringify(
+            errors,
+            null,
+            2
+          )}`
+        );
+      }
       return data ?? new Error(errors?.[0]?.message);
     } catch (err) {
       return err;

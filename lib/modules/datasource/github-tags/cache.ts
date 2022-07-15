@@ -2,6 +2,7 @@ import type { GithubHttp } from '../../../util/http/github';
 import { AbstractGithubDatasourceCache } from '../github-releases/cache/cache-base';
 import type {
   CacheOptions,
+  GithubQueryParams,
   StoredItemBase,
 } from '../github-releases/cache/types';
 
@@ -76,6 +77,14 @@ export class CacheableGithubTags extends AbstractGithubDatasourceCache<
 
   constructor(http: GithubHttp, opts: CacheOptions = {}) {
     super(http, opts);
+  }
+
+  // eslint-disable-next-line
+  protected override async query(
+    baseUrl: string,
+    variables: GithubQueryParams
+  ) {
+    return super.query(baseUrl, variables);
   }
 
   coerceFetched(item: FetchedTag): StoredTag | null {
