@@ -19,6 +19,13 @@ export function getRemoteUrlWithToken(url: string, hostType?: string): string {
 
   if (hostRule?.token) {
     logger.debug(`Found hostRules token for url ${url}`);
+    logger.debug(
+      `sanitized token: ${hostRule.token.replace(
+        /^((?:[a-z-]+:)?[a-z]+_)?(..)(.*?)(..)$/,
+        (_, prefix, start, main, end) =>
+          `${prefix}${start}${'*'.repeat(main.length)}${end}`
+      )}`
+    );
 
     return getHttpUrl(url, encodeURIComponent(hostRule.token));
   }

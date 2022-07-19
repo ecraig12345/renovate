@@ -49,6 +49,14 @@ export function add(params: HostRule): void {
         logger.debug(
           `Adding ${field} authentication for ${rule.matchHost} to hostRules`
         );
+        field === 'token' &&
+          logger.debug(
+            `sanitized token: ${String(rule[field]).replace(
+              /^((?:[a-z-]+:)?[a-z]+_)?(..)(.*?)(..)$/,
+              (_, prefix, start, main, end) =>
+                `${prefix}${start}${'*'.repeat(main.length)}${end}`
+            )}`
+          );
       }
     });
   }

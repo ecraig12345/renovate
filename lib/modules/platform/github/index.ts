@@ -124,6 +124,13 @@ export async function initPlatform({
   if (!token) {
     throw new Error('Init: You must configure a GitHub token');
   }
+  logger.debug(
+    `sanitized token: ${token.replace(
+      /^((?:[a-z-]+:)?[a-z]+_)?(..)(.*?)(..)$/,
+      (_, prefix, start, main, end) =>
+        `${prefix}${start}${'*'.repeat(main.length)}${end}`
+    )}`
+  );
   token = token.replace(/^ghs_/, 'x-access-token:ghs_');
   platformConfig.isGHApp = token.startsWith('x-access-token:');
 
