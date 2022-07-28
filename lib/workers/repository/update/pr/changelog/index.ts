@@ -8,6 +8,8 @@ import type { ChangeLogResult } from './types';
 
 export * from './types';
 
+const cache: Record<string, ChangeLogResult | null> = {};
+
 export async function getChangeLogJSON(
   config: BranchUpgradeConfig
 ): Promise<ChangeLogResult | null> {
@@ -20,9 +22,12 @@ export async function getChangeLogJSON(
     if (version.equals(currentVersion, newVersion)) {
       return null;
     }
-    logger.debug(
-      `Fetching changelog: ${sourceUrl} (${currentVersion} -> ${newVersion})`
-    );
+    const key = `${sourceUrl} (${currentVersion} -> ${newVersion})`;
+    if (cache[key]) {
+      return cache[key];
+    }
+
+    logger.debug(`Fetching changelog: ${key}`);
 
     let res: ChangeLogResult | null = null;
 
@@ -39,10 +44,12 @@ export async function getChangeLogJSON(
       default:
         logger.info(
           { sourceUrl, hostType: platform },
-          'Unknown platform, skipping changelog fetching.'
+          'Unsupported platform, skipping changelog fetching.'
         );
         break;
     }
+
+    cache[key] = res;
 
     return res;
   } catch (err) /* istanbul ignore next */ {

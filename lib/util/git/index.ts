@@ -354,6 +354,9 @@ export async function syncGit(): Promise<void> {
       const fetchStart = Date.now();
       await gitRetry(() => git.pull());
       await gitRetry(() => git.fetch());
+      // breaks rebasing PRs?
+      await gitRetry(() => git.pull({ '--depth': 100 }));
+      await gitRetry(() => git.fetch({ '--depth': 100 }));
       config.currentBranch =
         config.currentBranch || (await getDefaultBranch(git));
       await resetToBranch(config.currentBranch);
@@ -378,6 +381,9 @@ export async function syncGit(): Promise<void> {
       } else {
         logger.debug('Performing blobless clone');
         opts.push('--filter=blob:none');
+        opts.push('--depth=100');
+        opts.push('--no-tags');
+        opts.push('--single-branch');
       }
       if (config.extraCloneOpts) {
         Object.entries(config.extraCloneOpts).forEach((e) =>
@@ -388,6 +394,12 @@ export async function syncGit(): Promise<void> {
       const emptyDirAndClone = async (): Promise<void> => {
         await fs.emptyDir(localDir);
         await git.clone(config.url, '.', opts);
+        logger.debug('fetching renovate branches');
+        await git.addConfig(
+          'remote.origin.fetch',
+          '+refs/heads/renovate/*:refs/remotes/origin/renovate/*'
+        );
+        await git.fetch({ '--depth': 100 });
       };
       await gitRetry(() => emptyDirAndClone());
     } catch (err) /* istanbul ignore next */ {
