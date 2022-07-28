@@ -171,7 +171,9 @@ export async function initRepo({
 }: RepoParams): Promise<RepoResult> {
   logger.debug(`initRepo("${repository}")`);
   config = { repository } as Config;
+  // logger.debug('getting api')
   const azureApiGit = await azureApi.gitApi();
+  // logger.debug('getting repos')
   const repos = await azureApiGit.getRepositories();
   const repo = getRepoByName(repository, repos);
   if (!repo) {

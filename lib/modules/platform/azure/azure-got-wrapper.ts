@@ -5,6 +5,7 @@ import type { IGitApi } from 'azure-devops-node-api/GitApi';
 import type { IPolicyApi } from 'azure-devops-node-api/PolicyApi';
 import type { IRequestHandler } from 'azure-devops-node-api/interfaces/common/VsoBaseInterfaces';
 import { PlatformId } from '../../../constants';
+// import { logger } from '../../../logger';
 import type { HostRule } from '../../../types';
 import * as hostRules from '../../../util/host-rules';
 
@@ -21,6 +22,7 @@ function getAuthenticationHandler(config: HostRule): IRequestHandler {
 
 export function azureObj(): azure.WebApi {
   const config = hostRules.find({ hostType, url: endpoint });
+  // logger.debug({ endpoint, hostRule: config }, 'init azure auth')
   if (!config.token && !(config.username && config.password)) {
     throw new Error(`No config found for azure`);
   }

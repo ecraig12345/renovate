@@ -23,12 +23,18 @@ export async function getYarnLock(filePath: string): Promise<LockFile> {
         lockfileVersion = parseInt(val.cacheKey, 10);
       } else {
         for (const entry of key.split(', ')) {
-          const { scope, name, range } = structUtils.parseDescriptor(entry);
-          const packageName = scope ? `@${scope}/${name}` : name;
-          const { selector } = structUtils.parseRange(range);
+          // errors on:
+          // @editor/node_modules/mobx-react-lite@npm:mobx-react-lite@^2.2.2
+          try {
+            const { scope, name, range } = structUtils.parseDescriptor(entry);
+            const packageName = scope ? `@${scope}/${name}` : name;
+            const { selector } = structUtils.parseRange(range);
 
-          logger.trace({ entry, version: val.version });
-          lockedVersions[packageName + '@' + selector] = parsed[key].version;
+            logger.trace({ entry, version: val.version });
+            lockedVersions[packageName + '@' + selector] = parsed[key].version;
+          } catch (err) {
+            logger.debug({ entry, err }, 'invalid descriptor or range');
+          }
         }
       }
     }

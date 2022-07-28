@@ -38,7 +38,8 @@ export async function getNodeConstraint(
   const constraint =
     (await getNodeFile(getSiblingFileName(packageFile, '.nvmrc'))) ??
     (await getNodeFile(getSiblingFileName(packageFile, '.node-version'))) ??
-    getPackageJsonConstraint(config);
+    getPackageJsonConstraint(config) ??
+    '14';
   if (!constraint) {
     logger.debug('No node constraint found - using latest');
   }
