@@ -92,10 +92,15 @@ export function unemojify(text: string): string {
 }
 
 function stripEmoji(emoji: string): string {
-  const hexCode = stripHexCode(fromUnicodeToHexcode(emoji));
-  const codePoint = fromHexcodeToCodepoint(hexCode);
-  const result = fromCodepointToUnicode(codePoint);
-  return result;
+  const rawHexCode = fromUnicodeToHexcode(emoji);
+  const hexCode = stripHexCode(rawHexCode);
+  // hexCode could be empty in the rare case that the string contains a modifier character
+  // which isn't modifying anything
+  if (hexCode) {
+    const codePoint = fromHexcodeToCodepoint(hexCode);
+    return fromCodepointToUnicode(codePoint);
+  }
+  return '';
 }
 
 export function stripEmojis(input: string): string {
