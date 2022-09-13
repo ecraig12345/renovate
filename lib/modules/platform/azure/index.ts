@@ -17,7 +17,12 @@ import {
   REPOSITORY_NOT_FOUND,
 } from '../../../constants/error-messages';
 import { logger } from '../../../logger';
-import { BranchStatus, PrState, VulnerabilityAlert } from '../../../types';
+import {
+  BranchStatus,
+  HostRule,
+  PrState,
+  VulnerabilityAlert,
+} from '../../../types';
 import * as git from '../../../util/git';
 import * as hostRules from '../../../util/host-rules';
 import { regEx } from '../../../util/regex';
@@ -68,6 +73,8 @@ interface Config {
   fileList: null;
   repository: string;
   defaultBranch: string;
+  ignorePrAuthor?: boolean;
+  renovateUsername?: string | false;
 }
 
 interface User {
@@ -84,7 +91,7 @@ const defaults: {
   hostType: PlatformId.Azure,
 };
 
-export function initPlatform({
+export async function initPlatform({
   endpoint,
   token,
   username,
@@ -107,7 +114,43 @@ export function initPlatform({
   const platformConfig: PlatformResult = {
     endpoint: defaults.endpoint,
   };
-  return Promise.resolve(platformConfig);
+
+  // Get the user ID corresponding to the token or username/password so that we can fetch only
+  // PRs created by that user later.
+  // TODO: getting the user info fails because there's no host rule yet, but not sure where to
+  // properly add this (it's currently added at the end of lib/modules/platform/index.ts
+  // based on results from this function, so it's circular)
+  let azureObj: ReturnType<typeof azureApi.azureObj>;
+  let addedHostRule = false;
+  try {
+    azureObj = azureApi.azureObj();
+  } catch {
+    const platformRule: HostRule = { ...defaults };
+    token && (platformRule.token = token);
+    username && (platformRule.username = username);
+    password && (platformRule.password = password);
+    hostRules.add(platformRule);
+    addedHostRule = true;
+  }
+
+  try {
+    azureObj ??= azureApi.azureObj();
+    const connection = await azureObj.connect();
+    const userId = connection.authenticatedUser?.id;
+    if (userId) {
+      logger.debug({ userId }, 'Got user ID for token');
+      platformConfig.renovateUsername = userId;
+    }
+  } catch (err) {
+    logger.debug({ err }, 'Failed to retrieve Azure DevOps user ID');
+  }
+
+  // full hostRules will be set later
+  if (addedHostRule) {
+    hostRules.clear();
+  }
+
+  return platformConfig;
 }
 
 export async function getRepos(): Promise<string[]> {
@@ -172,6 +215,8 @@ export async function getJsonFile(
 export async function initRepo({
   repository,
   cloneSubmodules,
+  renovateUsername,
+  ignorePrAuthor,
 }: RepoParams): Promise<RepoResult> {
   logger.debug(`initRepo("${repository}")`);
   config = { repository } as Config;
@@ -211,6 +256,8 @@ export async function initRepo({
   );
   config.mergeMethods = {};
   config.repoForceRebase = false;
+  config.ignorePrAuthor = ignorePrAuthor;
+  config.renovateUsername = renovateUsername;
 
   const [projectName, repoName] = repository.split('/');
   const opts = hostRules.find({
@@ -243,14 +290,24 @@ export function getRepoForceRebase(): Promise<boolean> {
 export async function getPrList(): Promise<AzurePr[]> {
   logger.debug('getPrList()');
   if (!config.prList) {
+    const start = Date.now();
     const azureApiGit = await azureApi.gitApi();
+    const userOption =
+      !config.ignorePrAuthor && config.renovateUsername
+        ? { creatorId: config.renovateUsername }
+        : undefined;
+    if (userOption) {
+      logger.debug(
+        `getPrList: only looking for PRs by ${userOption.creatorId}`
+      );
+    }
     let prs: GitPullRequest[] = [];
     let fetchedPrs: GitPullRequest[];
     let skip = 0;
     do {
       fetchedPrs = await azureApiGit.getPullRequests(
         config.repoId,
-        { status: 4 },
+        { status: 4, ...userOption },
         config.project,
         0,
         skip,
@@ -261,7 +318,10 @@ export async function getPrList(): Promise<AzurePr[]> {
     } while (fetchedPrs.length > 0);
 
     config.prList = prs.map(getRenovatePRFormat);
-    logger.debug({ length: config.prList.length }, 'Retrieved Pull Requests');
+    logger.debug(
+      { length: config.prList.length, durationMs: Date.now() - start },
+      'Retrieved Pull Requests'
+    );
   }
   return config.prList;
 }
