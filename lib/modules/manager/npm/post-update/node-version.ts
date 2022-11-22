@@ -41,7 +41,8 @@ export async function getNodeConstraint(
   const constraint =
     (await getNodeFile(upath.join(lockFileDir, '.nvmrc'))) ??
     (await getNodeFile(upath.join(lockFileDir, '.node-version'))) ??
-    getPackageJsonConstraint(config);
+    getPackageJsonConstraint(config) ??
+    '14';
   if (!constraint) {
     logger.debug('No node constraint found - using latest');
   }
