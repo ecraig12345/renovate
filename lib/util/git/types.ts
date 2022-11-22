@@ -12,6 +12,11 @@ export type GitNoVerifyOption = 'commit' | 'push';
 export type CommitSha = string;
 
 export interface StorageConfig {
+  defaultBranch?: string;
+  baseBranches?: string[];
+  branchPrefix?: string;
+  branchPrefixOld?: string;
+  onboardingBranch?: string;
   currentBranch?: string;
   url: string;
   extraCloneOpts?: GitOptions;

@@ -200,7 +200,20 @@ export async function validateGitVersion(): Promise<boolean> {
 
 async function fetchBranchCommits(): Promise<void> {
   config.branchCommits = {};
-  const opts = ['ls-remote', '--heads', config.url];
+  let includedRefs: string[] = [];
+  if (config.defaultBranch) {
+    //
+    includedRefs = [
+      config.defaultBranch,
+      ...(config.baseBranches ?? []),
+      config.branchPrefix && `${config.branchPrefix}*`,
+      config.branchPrefixOld && `${config.branchPrefixOld}*`,
+      config.onboardingBranch,
+    ]
+      .filter((branch): branch is string => !!branch)
+      .map((branch) => `refs/heads/${branch}`);
+  }
+  const opts = ['ls-remote', '--heads', config.url, ...includedRefs];
   if (config.extraCloneOpts) {
     Object.entries(config.extraCloneOpts).forEach((e) =>
       // TODO: types (#7154)
