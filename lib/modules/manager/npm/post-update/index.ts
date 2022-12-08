@@ -331,8 +331,23 @@ async function updateNpmrcContent(
     : additionalLines;
   try {
     const newContent = newNpmrc.join('\n');
-    if (newContent !== originalContent) {
-      logger.debug(`Writing updated .npmrc file to ${npmrcFilePath}`);
+    const npmrcDebug = newContent.replace(
+      /(:_\w+=)(.*)$/gm,
+      (match, name, value) =>
+        [
+          name,
+          value.slice(0, 2),
+          '*'.repeat(value.length - 4),
+          value.slice(-2),
+        ].join('')
+    );
+    if (newContent === originalContent) {
+      logger.debug({ npmrcDebug }, `No changes to .npmrc at ${npmrcFilePath}`);
+    } else {
+      logger.debug(
+        { npmrcDebug },
+        `Writing updated .npmrc file to ${npmrcFilePath}`
+      );
       await writeLocalFile(npmrcFilePath, `${newContent}\n`);
     }
   } catch /* istanbul ignore next */ {

@@ -19,6 +19,8 @@ import { PackageFiles } from '../package-files';
 import { lookupUpdates } from './lookup';
 import type { LookupUpdateConfig } from './lookup/types';
 
+const loggedDisabled = new Set<string>();
+
 async function fetchDepUpdates(
   packageFileConfig: RenovateConfig & PackageFile,
   indep: PackageDependency
@@ -48,7 +50,10 @@ async function fetchDepUpdates(
     logger.debug({ dependency: depName }, 'Dependency is ignored');
     dep.skipReason = 'ignored';
   } else if (depConfig.enabled === false) {
-    logger.debug({ dependency: depName }, 'Dependency is disabled');
+    if (depName && !loggedDisabled.has(depName)) {
+      logger.debug({ dependency: depName }, 'Dependency is disabled');
+      loggedDisabled.add(depName);
+    }
     dep.skipReason = 'disabled';
   } else {
     if (depConfig.datasource) {

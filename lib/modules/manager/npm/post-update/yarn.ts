@@ -130,6 +130,7 @@ export async function generateLockFile(
 
     const commands: string[] = [];
     let cmdOptions = ''; // should have a leading space
+    // let cmdOptions = ' --verbose'; // should have a leading space
     if (config.skipInstalls !== false) {
       if (isYarn1) {
         const { offlineMirror, yarnPath } = await checkYarnrc(lockFileDir);
@@ -194,8 +195,11 @@ export async function generateLockFile(
       commands.push(`yarn set version ${yarnUpdate.newValue}`);
     }
 
+    commands.push('yarn config list');
+
     // This command updates the lock file based on package.json
-    commands.push(`yarn install${cmdOptions}`);
+    commands.push(`npx midgard-yarn install${cmdOptions}`);
+    // commands.push(`yarn install${cmdOptions}`);
 
     // rangeStrategy = update-lockfile
     const lockUpdates = upgrades.filter((upgrade) => upgrade.isLockfileUpdate);

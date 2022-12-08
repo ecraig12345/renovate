@@ -43,6 +43,7 @@ export function processHostRules(): HostRulesResult {
         const password = toBase64(hostRule.password);
         additionalNpmrcContent.push(`${uri}:username=${hostRule.username}`);
         additionalNpmrcContent.push(`${uri}:_password=${password}`);
+        // additionalNpmrcContent.push(`${uri}:_password=${hostRule.password}`);
         additionalYarnRcYml ||= { npmRegistries: {} };
         additionalYarnRcYml.npmRegistries[uri] = {
           npmAuthIdent: `${hostRule.username}:${hostRule.password}`,

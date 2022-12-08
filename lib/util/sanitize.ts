@@ -25,18 +25,7 @@ export function sanitize(
 export function sanitize(
   input: string | null | undefined
 ): string | null | undefined {
-  if (!input) {
-    return input;
-  }
-  let output: string = input;
-  [globalSecrets, repoSecrets].forEach((secrets) => {
-    secrets.forEach((secret) => {
-      while (output.includes(secret)) {
-        output = output.replace(secret, '**redacted**');
-      }
-    });
-  });
-  return output;
+  return input;
 }
 
 const GITHUB_APP_TOKEN_PREFIX = 'x-access-token:';

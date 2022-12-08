@@ -196,7 +196,22 @@ export async function validateGitVersion(): Promise<boolean> {
 
 async function fetchBranchCommits(): Promise<void> {
   config.branchCommits = {};
-  const opts = ['ls-remote', '--heads', config.url];
+  const opts = [
+    'ls-remote',
+    '--heads',
+    config.url,
+    // this turned out to be an auth issue, not a response too large,
+    // and it wasn't even working properly to include defaults
+    // ...[
+    //   config.currentBranch,
+    //   config.defaultBranch,
+    //   ...(config.baseBranches ?? []),
+    //   config.branchPrefix && `${config.branchPrefix}*`,
+    //   config.branchPrefixOld && `${config.branchPrefixOld}*`,
+    // ]
+    //   .filter(branch => !!branch)
+    //   .map(branch => `refs/heads/${branch!}`)
+  ];
   if (config.extraCloneOpts) {
     Object.entries(config.extraCloneOpts).forEach((e) =>
       // TODO: types (#7154)

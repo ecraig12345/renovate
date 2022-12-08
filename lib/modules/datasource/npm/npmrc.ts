@@ -72,6 +72,7 @@ export function convertNpmrcToRules(npmrc: Record<string, any>): NpmrcRules {
       rule.username = value;
     } else if (keyType === '_password') {
       rule.password = fromBase64(value);
+      // rule.password = value.endsWith('==') ? fromBase64(value) : value;
     } else {
       continue; // don't add the rule
     }

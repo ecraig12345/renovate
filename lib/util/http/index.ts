@@ -75,6 +75,10 @@ async function gotRoutine<T>(
       /* istanbul ignore next: can't be tested */ 0;
     return resp;
   } catch (error) {
+    logger.debug(
+      { url, options, requestStats, err: error },
+      'http gotRoutine error'
+    );
     if (error instanceof RequestError) {
       statusCode =
         error.response?.statusCode ??
@@ -175,6 +179,7 @@ export class Http<GetOptions = HttpOptions, PostOptions = HttpPostOptions> {
       res.authorization = !!options?.headers?.authorization;
       return cloneResponse(res);
     } catch (err) {
+      logger.debug({ err, requestUrl, httpOptions }, 'http request error');
       const { abortOnError, abortIgnoreStatusCodes } = options;
       if (abortOnError && !abortIgnoreStatusCodes?.includes(err.statusCode)) {
         throw new ExternalHostError(err);

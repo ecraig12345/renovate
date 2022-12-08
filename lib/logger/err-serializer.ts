@@ -1,4 +1,5 @@
 import is from '@sindresorhus/is';
+import { sanitize } from '../util/sanitize';
 import prepareError from './utils';
 
 Error.stackTraceLimit = 20;
@@ -11,10 +12,7 @@ export default function errSerializer(err: Error): any {
   for (const field of redactedFields) {
     const val = response[field];
     if (is.string(val)) {
-      response[field] = val.replace(
-        /https:\/\/[^@]*?@/g, // TODO #12874
-        'https://**redacted**@'
-      );
+      response[field] = sanitize(val);
     }
   }
   return response;

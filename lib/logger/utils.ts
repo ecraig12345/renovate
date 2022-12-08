@@ -4,7 +4,6 @@ import bunyan from 'bunyan';
 import fs from 'fs-extra';
 import { RequestError as HttpError } from 'got';
 import { clone } from '../util/clone';
-import { redactedFields, sanitize } from '../util/sanitize';
 import type { BunyanRecord, BunyanStream } from './types';
 
 const excludeProps = ['pid', 'time', 'v', 'hostname'];
@@ -39,13 +38,6 @@ export class ProblemStream extends Stream {
     this._problems = [];
   }
 }
-
-const contentFields = [
-  'content',
-  'contents',
-  'packageLockParsed',
-  'yarnLockParsed',
-];
 
 export default function prepareError(err: Error): Record<string, unknown> {
   const response: Record<string, unknown> = {
@@ -94,75 +86,10 @@ export default function prepareError(err: Error): Record<string, unknown> {
 
 type NestedValue = unknown[] | object;
 
-function isNested(value: unknown): value is NestedValue {
-  return is.array(value) || is.object(value);
-}
-
 export function sanitizeValue(
   value: unknown,
   seen = new WeakMap<NestedValue, unknown>()
 ): any {
-  if (is.string(value)) {
-    return sanitize(sanitizeUrls(value));
-  }
-
-  if (is.date(value)) {
-    return value;
-  }
-
-  if (is.function_(value)) {
-    return '[function]';
-  }
-
-  if (is.buffer(value)) {
-    return '[content]';
-  }
-
-  if (is.error(value)) {
-    const err = prepareError(value);
-    return sanitizeValue(err, seen);
-  }
-
-  if (is.array(value)) {
-    const length = value.length;
-    const arrayResult = Array(length);
-    seen.set(value, arrayResult);
-    for (let idx = 0; idx < length; idx += 1) {
-      const val = value[idx];
-      arrayResult[idx] =
-        isNested(val) && seen.has(val)
-          ? seen.get(val)
-          : sanitizeValue(val, seen);
-    }
-    return arrayResult;
-  }
-
-  if (is.object(value)) {
-    const objectResult: Record<string, any> = {};
-    seen.set(value, objectResult);
-    for (const [key, val] of Object.entries<any>(value)) {
-      let curValue: any;
-      if (!val) {
-        curValue = val;
-      } else if (redactedFields.includes(key)) {
-        curValue = '***********';
-      } else if (contentFields.includes(key)) {
-        curValue = '[content]';
-      } else if (key === 'secrets') {
-        curValue = {};
-        Object.keys(val).forEach((secretKey) => {
-          curValue[secretKey] = '***********';
-        });
-      } else {
-        curValue = seen.has(val) ? seen.get(val) : sanitizeValue(val, seen);
-      }
-
-      objectResult[key] = curValue;
-    }
-
-    return objectResult;
-  }
-
   return value;
 }
 
@@ -244,7 +171,7 @@ export function validateLogLevel(logLevelToCheck: string | undefined): void {
 
 // Can't use `util/regex` because of circular reference to logger
 const urlRe = /[a-z]{3,9}:\/\/[-;:&=+$,\w]+@[a-z0-9.-]+/gi;
-const urlCredRe = /\/\/[^@]+@/g;
+const urlCredRe = /\/\/[^@]+@(?=.+?\.)/g;
 
 export function sanitizeUrls(text: string): string {
   return text.replace(urlRe, (url) => {
